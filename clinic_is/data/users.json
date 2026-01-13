@@ -1,0 +1,14 @@
+[
+  {
+    "username": "admin",
+    "role": "admin",
+    "password_hash": "218be47776887599844dbba741a48b72c2aa63f559bda7f51cf6735fc13693c2",
+    "salt": "9c242b94ee63f106"
+  },
+  {
+    "username": "clerk",
+    "role": "clerk",
+    "password_hash": "6bdcc4a2efbbe29ce1c2444280eecac3eda9f0597fd88f5533b21ded6f5cd3e8",
+    "salt": "c8974e3dc3d4dcee"
+  }
+]

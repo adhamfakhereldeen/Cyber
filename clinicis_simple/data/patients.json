@@ -1,0 +1,17 @@
+[
+  {
+    "pid": "p1",
+    "name": "Alice",
+    "phone": "111",
+    "visits": [
+      "Routine check complete",
+      "Follow-up in 3 months"
+    ]
+  },
+  {
+    "pid": "p2",
+    "name": "Bob",
+    "phone": "222",
+    "visits": []
+  }
+]
