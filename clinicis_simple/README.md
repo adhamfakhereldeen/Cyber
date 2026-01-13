@@ -28,6 +28,3 @@
 - Screenshot 1: מסך ראשי.
 - Screenshot 2: קביעת תור.
 - Screenshot 3: בחירת תור + סיכום.
-
-
-TESTESTT
