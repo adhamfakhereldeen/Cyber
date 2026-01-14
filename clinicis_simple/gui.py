@@ -20,6 +20,7 @@ class SimpleGUI:
         frm.pack(fill="both", expand=True)
 
         # Search entry (Event: Enter key)
+        ttk.Label(frm, text="Search Patient ID:").grid(row=0, column=0, sticky="w")
         self.search_entry = ttk.Entry(frm, width=20)
         self.search_entry.grid(row=0, column=1, padx=5, pady=5)
         self.search_entry.bind("<Return>", self._on_search)
