@@ -3,7 +3,8 @@ from store import Store
 
 
 def demo():
-    store = Store()
+    # Always start fresh: overwrite JSON files each run
+    store = Store(fresh_start=True)
 
     # create objects
     p1 = Patient("p1", "Alice", "111")
@@ -23,9 +24,9 @@ def demo():
 
     # logical methods
     if a1:
-        a1.reschedule("2026-01-15 12:00")
+        store.reschedule_appointment("a1", "2026-01-15 12:00")
     if a2:
-        a2.cancel()
+        store.cancel_appointment("a2")
     store.complete_appointment("a1", "Routine check complete")
 
     p1.add_visit("Follow-up in 3 months")

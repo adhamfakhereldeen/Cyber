@@ -1,5 +1,5 @@
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 
 class SerializableMixin:
@@ -18,17 +18,11 @@ class Person:
         self.name = name
         self.phone = phone
 
-    def update_phone(self, new_phone: str) -> None:
-        self.phone = new_phone
-
-    def display(self) -> str:
-        return f"{self.name} ({self.pid}) - {self.phone}"
-
 
 class Patient(Person):
-    def __init__(self, pid: str, name: str, phone: str) -> None:
+    def __init__(self, pid: str, name: str, phone: str, visits: Optional[List[str]] = None) -> None:
         super().__init__(pid, name, phone)
-        self.visits: List[str] = []
+        self.visits: List[str] = list(visits or [])
 
     def add_visit(self, note: str) -> None:
         self.visits.append(note)
@@ -38,10 +32,17 @@ class Patient(Person):
 
 
 class Doctor(Person):
-    def __init__(self, pid: str, name: str, phone: str, specialty: str) -> None:
+    def __init__(
+        self,
+        pid: str,
+        name: str,
+        phone: str,
+        specialty: str,
+        schedule: Optional[List[str]] = None,
+    ) -> None:
         super().__init__(pid, name, phone)
         self.specialty = specialty
-        self.schedule: List[str] = []
+        self.schedule: List[str] = list(schedule or [])
 
     def is_available(self, datetime_str: str) -> bool:
         return datetime_str not in self.schedule
@@ -52,13 +53,21 @@ class Doctor(Person):
 
 
 class Appointment(SerializableMixin, AuditableMixin):
-    def __init__(self, appt_id: str, patient_id: str, doctor_id: str, datetime_str: str) -> None:
+    def __init__(
+        self,
+        appt_id: str,
+        patient_id: str,
+        doctor_id: str,
+        datetime_str: str,
+        status: str = "scheduled",
+        summary: str = "",
+    ) -> None:
         self.appt_id = appt_id
         self.patient_id = patient_id
         self.doctor_id = doctor_id
         self.datetime_str = datetime_str
-        self.status = "scheduled"
-        self.summary = ""
+        self.status = status
+        self.summary = summary
 
     def reschedule(self, new_datetime: str) -> None:
         old = self.datetime_str

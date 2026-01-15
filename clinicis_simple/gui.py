@@ -9,7 +9,8 @@ class SimpleGUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
         self.root.title("ClinicIS Simple")
-        self.store = Store()
+        # Always start fresh: overwrite JSON files each run
+        self.store = Store(fresh_start=True)
         self.store.load_from_files()
         self._ensure_seed()
         self._build_ui()
@@ -52,17 +53,30 @@ class SimpleGUI:
         self.listbox.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
         self.listbox.bind("<<ListboxSelect>>", self._on_select)
 
+        # Details panel (no popups)
+        ttk.Label(frm, text="Appointment Details:").grid(row=7, column=0, sticky="w")
+        self.details_text = tk.Text(frm, height=4, width=50)
+        self.details_text.grid(row=8, column=0, columnspan=2, pady=5)
+        self.details_text.configure(state="disabled")
+
         # Text summary input
-        ttk.Label(frm, text="Visit Summary:").grid(row=7, column=0, sticky="w")
+        ttk.Label(frm, text="Visit Summary:").grid(row=9, column=0, sticky="w")
         self.summary_text = tk.Text(frm, height=4, width=50)
-        self.summary_text.grid(row=8, column=0, columnspan=2, pady=5)
+        self.summary_text.grid(row=10, column=0, columnspan=2, pady=5)
 
         # Action buttons
         btn_frame = ttk.Frame(frm)
-        btn_frame.grid(row=9, column=0, columnspan=2, sticky="ew", pady=5)
+        btn_frame.grid(row=11, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Button(btn_frame, text="Complete", command=self._on_complete).grid(row=0, column=0, padx=2)
         ttk.Button(btn_frame, text="Cancel", command=self._on_cancel).grid(row=0, column=1, padx=2)
         ttk.Button(btn_frame, text="Delete", command=self._on_delete).grid(row=0, column=2, padx=2)
+        ttk.Button(btn_frame, text="Reschedule", command=self._on_reschedule).grid(row=0, column=3, padx=2)
+
+        # Status label (replaces popups)
+        self.status_var = tk.StringVar(value="Ready")
+        ttk.Label(frm, textvariable=self.status_var, foreground="gray").grid(
+            row=12, column=0, columnspan=2, sticky="w", pady=(6, 0)
+        )
 
         frm.columnconfigure(1, weight=1)
         frm.rowconfigure(6, weight=1)
@@ -70,33 +84,44 @@ class SimpleGUI:
     def _doctor_values(self):
         return [f"{d.pid} - {d.name}" for d in self.store.doctors.values()]
 
+    def _set_status(self, msg: str) -> None:
+        self.status_var.set(msg)
+
     def _on_search(self, event=None):
         pid = self.search_entry.get().strip()
         patient = self.store.patients.get(pid)
         if patient:
-            msg = f"Patient {pid}: {patient.name}\nVisits: {len(patient.visits)}"
-            messagebox.showinfo("Found", msg)
+            msg = f"Found patient {pid}: {patient.name} (Visits: {len(patient.visits)})"
+            self._set_status(msg)
         else:
-            messagebox.showwarning("Not found", f"No patient with id {pid}")
+            self._set_status(f"No patient with id {pid}")
 
     def _on_schedule(self):
         pid = self.patient_entry.get().strip()
         doctor_val = self.doctor_combo.get()
         dt = self.datetime_entry.get().strip()
         if not (pid and doctor_val and dt):
-            messagebox.showwarning("Missing", "Fill patient, doctor, and date/time")
+            self._set_status("Fill patient, doctor, and date/time")
             return
         if pid not in self.store.patients:
             self.store.add_patient(Patient(pid, f"Patient {pid}", "000"))
         doctor_id = doctor_val.split(" - ")[0]
-        appt_id = f"a{len(self.store.appointments)+1}"
+        appt_id = self._next_appt_id()
         appt = self.store.schedule_appointment(appt_id, pid, doctor_id, dt)
         if appt:
             self.store.save_to_files()
             self.refresh_list()
-            messagebox.showinfo("OK", f"Appointment {appt_id} created")
+            self._set_status(f"Appointment {appt_id} created")
         else:
-            messagebox.showerror("Error", "Failed to schedule (id? conflict?)")
+            self._set_status("Failed to schedule (id? conflict?)")
+
+    def _next_appt_id(self) -> str:
+        max_num = 0
+        for appt in self.store.appointments:
+            appt_id = getattr(appt, "appt_id", "")
+            if isinstance(appt_id, str) and appt_id.startswith("a") and appt_id[1:].isdigit():
+                max_num = max(max_num, int(appt_id[1:]))
+        return f"a{max_num + 1}"
 
     def _on_select(self, event=None):
         sel = self.listbox.curselection()
@@ -111,49 +136,72 @@ class SimpleGUI:
             f"Time {appt.datetime_str}\n"
             f"Status {appt.status}"
         )
-        messagebox.showinfo("Appointment", details)
+        self.details_text.configure(state="normal")
+        self.details_text.delete("1.0", "end")
+        self.details_text.insert("1.0", details)
+        self.details_text.configure(state="disabled")
         # keep summary box for user input only
         self.summary_text.delete("1.0", "end")
 
     def _on_complete(self):
         sel = self.listbox.curselection()
         if not sel:
-            messagebox.showwarning("Select", "Choose an appointment first")
+            self._set_status("Choose an appointment first")
             return
         idx = sel[0]
         appt = self.store.appointments[idx]
         summary = self.summary_text.get("1.0", "end").strip()
         if not summary:
-            messagebox.showwarning("Missing", "Add a summary first")
+            self._set_status("Add a summary first")
             return
         if self.store.complete_appointment(appt.appt_id, summary):
             self.store.save_to_files()
             self.refresh_list()
-            messagebox.showinfo("Done", "Appointment completed")
+            self._set_status("Appointment completed")
 
     def _on_cancel(self):
         sel = self.listbox.curselection()
         if not sel:
-            messagebox.showwarning("Select", "Choose an appointment first")
+            self._set_status("Choose an appointment first")
             return
         idx = sel[0]
         appt = self.store.appointments[idx]
         if self.store.cancel_appointment(appt.appt_id):
             self.store.save_to_files()
             self.refresh_list()
-            messagebox.showinfo("Cancelled", "Appointment cancelled")
+            self._set_status("Appointment cancelled")
 
     def _on_delete(self):
         sel = self.listbox.curselection()
         if not sel:
-            messagebox.showwarning("Select", "Choose an appointment first")
+            self._set_status("Choose an appointment first")
             return
         idx = sel[0]
         appt = self.store.appointments[idx]
         if self.store.delete_appointment(appt.appt_id):
             self.store.save_to_files()
             self.refresh_list()
-            messagebox.showinfo("Deleted", "Appointment removed")
+            self._set_status("Appointment removed")
+
+    def _on_reschedule(self):
+        sel = self.listbox.curselection()
+        if not sel:
+            self._set_status("Choose an appointment first")
+            return
+
+        new_dt = self.datetime_entry.get().strip()
+        if not new_dt:
+            self._set_status("Enter a new Date/Time first")
+            return
+
+        idx = sel[0]
+        appt = self.store.appointments[idx]
+        if self.store.reschedule_appointment(appt.appt_id, new_dt):
+            self.store.save_to_files()
+            self.refresh_list()
+            self._set_status("Appointment rescheduled")
+        else:
+            self._set_status("Failed to reschedule (conflict?)")
 
     def refresh_list(self):
         self.listbox.delete(0, "end")
@@ -161,12 +209,18 @@ class SimpleGUI:
             self.listbox.insert("end", f"{appt.appt_id} | {appt.patient_id} | {appt.doctor_id} | {appt.datetime_str} | {appt.status}")
 
     def _ensure_seed(self):
+        changed = False
         if not self.store.doctors:
             self.store.add_doctor(Doctor("d1", "Dr. Green", "555-0001", "GP"))
             self.store.add_doctor(Doctor("d2", "Dr. Blue", "555-0002", "Derm"))
+            changed = True
         if not self.store.patients:
             self.store.add_patient(Patient("p1", "Alice", "111"))
             self.store.add_patient(Patient("p2", "Bob", "222"))
+            changed = True
+
+        if changed:
+            self.store.save_to_files()
 
 
 def run_gui():

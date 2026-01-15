@@ -6,11 +6,27 @@ from models import Appointment, Doctor, Patient
 
 
 class Store:
-    def __init__(self) -> None:
+    def __init__(self, fresh_start: bool = False) -> None:
         self.patients: Dict[str, Patient] = {}
         self.doctors: Dict[str, Doctor] = {}
         self.appointments: List[Appointment] = []
         self.base = Path(__file__).parent
+
+        if fresh_start:
+            self.reset_files()
+
+    def reset_files(self) -> None:
+        """Overwrite the JSON files with empty lists (fresh start each run)."""
+        data_dir = self.base / "data"
+        data_dir.mkdir(exist_ok=True)
+        (data_dir / "patients.json").write_text("[]", encoding="utf-8")
+        (data_dir / "doctors.json").write_text("[]", encoding="utf-8")
+        (data_dir / "appointments.json").write_text("[]", encoding="utf-8")
+
+        # also reset in-memory state
+        self.patients = {}
+        self.doctors = {}
+        self.appointments = []
 
     def add_patient(self, patient: Patient) -> None:
         self.patients[patient.pid] = patient
@@ -34,7 +50,37 @@ class Store:
         appt = self._find(appt_id)
         if not appt:
             return False
+        # free doctor's slot (so it can be booked again)
+        doc = self.doctors.get(appt.doctor_id)
+        if doc and appt.datetime_str in doc.schedule:
+            doc.schedule.remove(appt.datetime_str)
         appt.cancel()
+        return True
+
+    def reschedule_appointment(self, appt_id: str, new_datetime: str) -> bool:
+        appt = self._find(appt_id)
+        if not appt:
+            return False
+
+        doc = self.doctors.get(appt.doctor_id)
+        if not doc:
+            return False
+
+        old_datetime = appt.datetime_str
+        if new_datetime == old_datetime:
+            return True
+
+        # If the new time is already booked (other than this same appointment), reject.
+        if new_datetime in doc.schedule:
+            return False
+
+        # update doctor's schedule
+        if old_datetime in doc.schedule:
+            doc.schedule.remove(old_datetime)
+        doc.add_appointment(new_datetime)
+
+        # update appointment
+        appt.reschedule(new_datetime)
         return True
 
     def complete_appointment(self, appt_id: str, summary: str) -> bool:
