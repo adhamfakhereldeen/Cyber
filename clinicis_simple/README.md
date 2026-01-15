@@ -1,8 +1,10 @@
-# ClinicIS (Simple) – פרויקט גמר בסיסי
+# ClinicIS – פרויקט גמר 
 
 ## הרצה
 - הדגמת קונסול: `python main.py`
 - GUI: `python gui.py`
+
+> הערה: כרגע הפרויקט מוגדר ל-"Fresh Start" — בכל הרצה המערכת מאפסת את קבצי ה-JSON בתיקיית `data/` כדי להתחיל נקי.
 
 ## קבצים
 - models.py – המחלקות Person/Patient/Doctor/Appointment + mixins.
@@ -23,8 +25,3 @@
 - Button click על "קבע תור".
 - בחירת פריט ב-Listbox (<<ListboxSelect>>) מציגה פרטי תור.
 - הקשה Enter ב-Entry החיפוש מחפשת מטופל ומציגה הודעה.
-
-## צילומי מסך (להוסיף)
-- Screenshot 1: מסך ראשי.
-- Screenshot 2: קביעת תור.
-- Screenshot 3: בחירת תור + סיכום.

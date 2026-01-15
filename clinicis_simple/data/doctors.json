@@ -2,19 +2,15 @@
   {
     "pid": "d1",
     "name": "Dr. Green",
-    "phone": "333",
+    "phone": "555-0001",
     "specialty": "GP",
-    "schedule": [
-      "2026-01-15 10:00"
-    ]
+    "schedule": []
   },
   {
     "pid": "d2",
     "name": "Dr. Blue",
-    "phone": "444",
+    "phone": "555-0002",
     "specialty": "Derm",
-    "schedule": [
-      "2026-01-15 11:00"
-    ]
+    "schedule": []
   }
 ]
