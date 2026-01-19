@@ -41,7 +41,7 @@ class Store:
             return None
         if not doctor.is_available(datetime_str):
             return None
-        appt = Appointment(appt_id, patient_id, doctor_id, datetime_str)
+        appt = Appointment(appt_id, patient_id, doctor_id, datetime_str, patient_obj=patient, doctor_obj=doctor)
         self.appointments.append(appt)
         doctor.add_appointment(datetime_str)
         return appt
@@ -129,6 +129,6 @@ class Store:
             self.doctors = {}
         try:
             appts_raw = json.loads((data_dir / "appointments.json").read_text(encoding="utf-8"))
-            self.appointments = [Appointment(**a) for a in appts_raw]
+            self.appointments = [Appointment.from_dict(a) for a in appts_raw]
         except Exception:
             self.appointments = []

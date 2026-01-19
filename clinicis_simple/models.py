@@ -18,6 +18,12 @@ class Person:
         self.name = name
         self.phone = phone
 
+    def update_phone(self, new_phone: str) -> None:
+        self.phone = new_phone
+
+    def get_contact(self) -> str:
+        return f"Name: {self.name}, Phone: {self.phone}"
+
 
 class Patient(Person):
     def __init__(self, pid: str, name: str, phone: str, visits: Optional[List[str]] = None) -> None:
@@ -61,6 +67,8 @@ class Appointment(SerializableMixin, AuditableMixin):
         datetime_str: str,
         status: str = "scheduled",
         summary: str = "",
+        patient_obj=None,
+        doctor_obj=None,
     ) -> None:
         self.appt_id = appt_id
         self.patient_id = patient_id
@@ -68,6 +76,31 @@ class Appointment(SerializableMixin, AuditableMixin):
         self.datetime_str = datetime_str
         self.status = status
         self.summary = summary
+        self.patient_obj = patient_obj
+        self.doctor_obj = doctor_obj
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "appt_id": self.appt_id,
+            "patient_id": self.patient_id,
+            "doctor_id": self.doctor_id,
+            "datetime_str": self.datetime_str,
+            "status": self.status,
+            "summary": self.summary,
+        }
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Appointment":
+        return cls(
+            data.get("appt_id", ""),
+            data.get("patient_id", ""),
+            data.get("doctor_id", ""),
+            data.get("datetime_str", ""),
+            data.get("status", "scheduled"),
+            data.get("summary", ""),
+            patient_obj=None,
+            doctor_obj=None,
+        )
 
     def reschedule(self, new_datetime: str) -> None:
         old = self.datetime_str
