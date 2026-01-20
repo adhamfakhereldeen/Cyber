@@ -1,8 +1,11 @@
 import json
+import logging
 from pathlib import Path
 from typing import Dict, List, Optional
 
 from models import Appointment, Doctor, Patient
+
+logger = logging.getLogger(__name__)
 
 
 class Clinic:
@@ -141,15 +144,18 @@ class Clinic:
         try:
             patients_raw = json.loads((data_dir / "patients.json").read_text(encoding="utf-8"))
             self.patients = {p["pid"]: Patient(**p) for p in patients_raw}
-        except Exception:
+        except (FileNotFoundError, PermissionError, OSError, json.JSONDecodeError) as exc:
+            logger.warning("Failed to load patients.json: %s", exc)
             self.patients = {}
         try:
             doctors_raw = json.loads((data_dir / "doctors.json").read_text(encoding="utf-8"))
             self.doctors = {d["pid"]: Doctor(**d) for d in doctors_raw}
-        except Exception:
+        except (FileNotFoundError, PermissionError, OSError, json.JSONDecodeError) as exc:
+            logger.warning("Failed to load doctors.json: %s", exc)
             self.doctors = {}
         try:
             appts_raw = json.loads((data_dir / "appointments.json").read_text(encoding="utf-8"))
             self.appointments = [Appointment.from_dict(a) for a in appts_raw]
-        except Exception:
+        except (FileNotFoundError, PermissionError, OSError, json.JSONDecodeError) as exc:
+            logger.warning("Failed to load appointments.json: %s", exc)
             self.appointments = []

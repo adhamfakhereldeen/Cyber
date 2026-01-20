@@ -4,7 +4,9 @@
     "name": "Dr. Green",
     "phone": "555-0001",
     "specialty": "GP",
-    "schedule": []
+    "schedule": [
+      "12"
+    ]
   },
   {
     "pid": "d2",

@@ -1,9 +1,12 @@
 import ctypes
+import logging
 import tkinter as tk
 from tkinter import messagebox, ttk
 
 from models import Doctor, Patient
 from clinic import Clinic
+
+logger = logging.getLogger(__name__)
 
 
 class ClinicGUI:
@@ -398,13 +401,13 @@ class ClinicGUI:
 def run_gui():
     try:
         ctypes.windll.shcore.SetProcessDpiAwareness(1)
-    except Exception:
-        pass
+    except (AttributeError, OSError) as exc:
+        logger.debug("DPI awareness not set: %s", exc)
     root = tk.Tk()
     try:
         root.tk.call("tk", "scaling", 2.25)
-    except Exception:
-        pass
+    except tk.TclError as exc:
+        logger.debug("Tk scaling not set: %s", exc)
     ClinicGUI(root)
     root.mainloop()
 
