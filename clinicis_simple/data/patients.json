@@ -3,7 +3,9 @@
     "pid": "p1",
     "name": "Alice",
     "phone": "111",
-    "visits": []
+    "visits": [
+      "goo"
+    ]
   },
   {
     "pid": "p2",
