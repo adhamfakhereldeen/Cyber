@@ -1,10 +1,10 @@
 from models import Appointment, Doctor, Patient
-from store import Store
+from clinic import Clinic
 
 
 def demo():
     # Always start fresh: overwrite JSON files each run
-    store = Store(fresh_start=True)
+    store = Clinic(fresh_start=True)
 
     # create objects
     p1 = Patient("p1", "Alice", "111")
@@ -38,7 +38,7 @@ def demo():
     print("Saved to JSON files.")
 
     # load back to prove it works
-    store2 = Store()
+    store2 = Clinic()
     store2.load_from_files()
     print("Loaded appointments:", [a.appt_id for a in store2.appointments])
     print("First appt status:", store2.appointments[0].status if store2.appointments else "none")

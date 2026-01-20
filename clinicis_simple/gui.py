@@ -2,15 +2,15 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 
 from models import Doctor, Patient
-from store import Store
+from clinic import Clinic
 
 
-class SimpleGUI:
+class ClinicGUI:
     def __init__(self, root: tk.Tk) -> None:
         self.root = root
-        self.root.title("ClinicIS Simple")
+        self.root.title("ClinicIS")
         # Always start fresh: overwrite JSON files each run
-        self.store = Store(fresh_start=True)
+        self.store = Clinic(fresh_start=True)
         self.store.load_from_files()
         self._ensure_seed()
         self._build_ui()
@@ -21,52 +21,64 @@ class SimpleGUI:
         frm.pack(fill="both", expand=True)
 
         # Search entry (Event: Enter key)
-        ttk.Label(frm, text="Search Patient ID:").grid(row=0, column=0, sticky="w")
+        ttk.Label(frm, text="Search Patient ID/Name:").grid(row=0, column=0, sticky="w")
         self.search_entry = ttk.Entry(frm, width=20)
         self.search_entry.grid(row=0, column=1, padx=5, pady=5)
         self.search_entry.bind("<Return>", self._on_search)
+        ttk.Button(frm, text="Search", command=self._on_search).grid(row=0, column=2, padx=5, pady=5)
+
+        # Search details panel
+        ttk.Label(frm, text="Patient Details:").grid(row=1, column=0, sticky="w")
+        self.search_details_text = tk.Text(frm, height=4, width=50)
+        self.search_details_text.grid(row=2, column=0, columnspan=2, pady=5)
+        self.search_details_text.configure(state="disabled")
 
         # Combobox doctor (input)
-        ttk.Label(frm, text="Doctor:").grid(row=1, column=0, sticky="w")
+        ttk.Label(frm, text="Doctor:").grid(row=3, column=0, sticky="w")
         self.doctor_combo = ttk.Combobox(frm, values=self._doctor_values(), state="readonly", width=25)
-        self.doctor_combo.grid(row=1, column=1, padx=5, pady=5)
+        self.doctor_combo.grid(row=3, column=1, padx=5, pady=5)
         if self.doctor_combo["values"]:
             self.doctor_combo.current(0)
 
-        # Patient ID entry
-        ttk.Label(frm, text="Patient ID:").grid(row=2, column=0, sticky="w")
-        self.patient_entry = ttk.Entry(frm, width=20)
-        self.patient_entry.grid(row=2, column=1, padx=5, pady=5)
+        # Combobox patient (input)
+        ttk.Label(frm, text="Patient:").grid(row=4, column=0, sticky="w")
+        self.patient_combo = ttk.Combobox(frm, values=self._patient_values(), state="readonly", width=25)
+        self.patient_combo.grid(row=4, column=1, padx=5, pady=5)
+        if self.patient_combo["values"]:
+            self.patient_combo.current(0)
 
         # Datetime entry
-        ttk.Label(frm, text="Date/Time:").grid(row=3, column=0, sticky="w")
+        ttk.Label(frm, text="Date/Time:").grid(row=5, column=0, sticky="w")
         self.datetime_entry = ttk.Entry(frm, width=20)
-        self.datetime_entry.grid(row=3, column=1, padx=5, pady=5)
+        self.datetime_entry.grid(row=5, column=1, padx=5, pady=5)
+        ttk.Label(frm, text="Format: dd-mm-yyyy/hh:mm", foreground="gray").grid(
+            row=6, column=0, columnspan=2, sticky="w"
+        )
 
         # Button schedule (Event: click)
         self.schedule_btn = ttk.Button(frm, text="קבע תור", command=self._on_schedule)
-        self.schedule_btn.grid(row=4, column=0, columnspan=2, sticky="ew", pady=5)
+        self.schedule_btn.grid(row=7, column=0, columnspan=2, sticky="ew", pady=5)
 
         # Listbox appointments (Event: select)
-        ttk.Label(frm, text="Appointments:").grid(row=5, column=0, sticky="w")
+        ttk.Label(frm, text="Appointments:").grid(row=8, column=0, sticky="w")
         self.listbox = tk.Listbox(frm, height=6, width=50)
-        self.listbox.grid(row=6, column=0, columnspan=2, sticky="nsew", pady=5)
+        self.listbox.grid(row=9, column=0, columnspan=2, sticky="nsew", pady=5)
         self.listbox.bind("<<ListboxSelect>>", self._on_select)
 
         # Details panel (no popups)
-        ttk.Label(frm, text="Appointment Details:").grid(row=7, column=0, sticky="w")
+        ttk.Label(frm, text="Appointment Details:").grid(row=10, column=0, sticky="w")
         self.details_text = tk.Text(frm, height=4, width=50)
-        self.details_text.grid(row=8, column=0, columnspan=2, pady=5)
+        self.details_text.grid(row=11, column=0, columnspan=2, pady=5)
         self.details_text.configure(state="disabled")
 
         # Text summary input
-        ttk.Label(frm, text="Visit Summary:").grid(row=9, column=0, sticky="w")
+        ttk.Label(frm, text="Visit Summary:").grid(row=12, column=0, sticky="w")
         self.summary_text = tk.Text(frm, height=4, width=50)
-        self.summary_text.grid(row=10, column=0, columnspan=2, pady=5)
+        self.summary_text.grid(row=13, column=0, columnspan=2, pady=5)
 
         # Action buttons
         btn_frame = ttk.Frame(frm)
-        btn_frame.grid(row=11, column=0, columnspan=2, sticky="ew", pady=5)
+        btn_frame.grid(row=14, column=0, columnspan=2, sticky="ew", pady=5)
         ttk.Button(btn_frame, text="Complete", command=self._on_complete).grid(row=0, column=0, padx=2)
         ttk.Button(btn_frame, text="Cancel", command=self._on_cancel).grid(row=0, column=1, padx=2)
         ttk.Button(btn_frame, text="Delete", command=self._on_delete).grid(row=0, column=2, padx=2)
@@ -75,36 +87,81 @@ class SimpleGUI:
         # Status label (replaces popups)
         self.status_var = tk.StringVar(value="Ready")
         ttk.Label(frm, textvariable=self.status_var, foreground="gray").grid(
-            row=12, column=0, columnspan=2, sticky="w", pady=(6, 0)
+            row=15, column=0, columnspan=2, sticky="w", pady=(6, 0)
         )
 
         frm.columnconfigure(1, weight=1)
-        frm.rowconfigure(6, weight=1)
+        frm.rowconfigure(9, weight=1)
 
     def _doctor_values(self):
         return [f"{d.pid} - {d.name}" for d in self.store.doctors.values()]
 
+    def _patient_values(self):
+        return [f"{p.pid} - {p.name}" for p in self.store.patients.values()]
+
     def _set_status(self, msg: str) -> None:
         self.status_var.set(msg)
 
+    def _show_error(self, title: str, msg: str) -> None:
+        messagebox.showerror(title, msg)
+
     def _on_search(self, event=None):
-        pid = self.search_entry.get().strip()
-        patient = self.store.patients.get(pid)
+        query = self.search_entry.get().strip()
+        if not query:
+            self._set_status("Enter a patient ID or name")
+            return
+
+        patient = self.store.patients.get(query)
+        if not patient:
+            q = query.casefold()
+            patient = next((p for p in self.store.patients.values() if p.name.casefold() == q), None)
+
         if patient:
-            msg = f"Found patient {pid}: {patient.name} (Visits: {len(patient.visits)})"
-            self._set_status(msg)
+            appts = [a for a in self.store.appointments if a.patient_id == patient.pid]
+            details = [
+                f"Patient {patient.pid}",
+                f"Name {patient.name}",
+                f"Phone {patient.phone}",
+                f"Visits {len(patient.visits)}",
+                f"Appointments {len(appts)}",
+            ]
+            if appts:
+                details.append("\nAppointments:")
+                for a in appts:
+                    details.append(f"- {a.appt_id} | {a.doctor_id} | {a.datetime_str} | {a.status}")
+
+            self.search_details_text.configure(state="normal")
+            self.search_details_text.delete("1.0", "end")
+            self.search_details_text.insert("1.0", "\n".join(details))
+            self.search_details_text.configure(state="disabled")
+
+            self.listbox.selection_clear(0, "end")
+            first_idx = None
+            for idx, appt in enumerate(self.store.appointments):
+                if appt.patient_id == patient.pid:
+                    self.listbox.selection_set(idx)
+                    if first_idx is None:
+                        first_idx = idx
+            if first_idx is not None:
+                self.listbox.see(first_idx)
+
+            self._set_status("Ready")
         else:
-            self._set_status(f"No patient with id {pid}")
+            self.search_details_text.configure(state="normal")
+            self.search_details_text.delete("1.0", "end")
+            self.search_details_text.configure(state="disabled")
+            self._set_status(f"No patient with id or name {query}")
+            self._show_error("Not found", f"No patient with id or name {query}.")
 
     def _on_schedule(self):
-        pid = self.patient_entry.get().strip()
+        patient_val = self.patient_combo.get()
         doctor_val = self.doctor_combo.get()
         dt = self.datetime_entry.get().strip()
-        if not (pid and doctor_val and dt):
+        if not (patient_val and doctor_val and dt):
             self._set_status("Fill patient, doctor, and date/time")
+            self._show_error("Missing data", "Please select patient, doctor, and date/time.")
             return
-        if pid not in self.store.patients:
-            self.store.add_patient(Patient(pid, f"Patient {pid}", "000"))
+        pid = patient_val.split(" - ")[0]
         doctor_id = doctor_val.split(" - ")[0]
         appt_id = self._next_appt_id()
         appt = self.store.schedule_appointment(appt_id, pid, doctor_id, dt)
@@ -113,7 +170,8 @@ class SimpleGUI:
             self.refresh_list()
             self._set_status(f"Appointment {appt_id} created")
         else:
-            self._set_status("Failed to schedule (id? conflict?)")
+            self._set_status("Failed to schedule (conflict or invalid)")
+            self._show_error("Schedule error", "Unable to schedule. Time conflict or invalid data.")
 
     def _next_appt_id(self) -> str:
         max_num = 0
@@ -192,6 +250,7 @@ class SimpleGUI:
         new_dt = self.datetime_entry.get().strip()
         if not new_dt:
             self._set_status("Enter a new Date/Time first")
+            self._show_error("Missing data", "Please enter a new date/time.")
             return
 
         idx = sel[0]
@@ -202,6 +261,7 @@ class SimpleGUI:
             self._set_status("Appointment rescheduled")
         else:
             self._set_status("Failed to reschedule (conflict?)")
+            self._show_error("Reschedule error", "Unable to reschedule. Time conflict or invalid data.")
 
     def refresh_list(self):
         self.listbox.delete(0, "end")
@@ -225,7 +285,7 @@ class SimpleGUI:
 
 def run_gui():
     root = tk.Tk()
-    SimpleGUI(root)
+    ClinicGUI(root)
     root.mainloop()
 
 

@@ -5,7 +5,7 @@ from typing import Dict, List, Optional
 from models import Appointment, Doctor, Patient
 
 
-class Store:
+class Clinic:
     def __init__(self, fresh_start: bool = False) -> None:
         self.patients: Dict[str, Patient] = {}
         self.doctors: Dict[str, Doctor] = {}
@@ -34,10 +34,14 @@ class Store:
     def add_doctor(self, doctor: Doctor) -> None:
         self.doctors[doctor.pid] = doctor
 
-    def schedule_appointment(self, appt_id: str, patient_id: str, doctor_id: str, datetime_str: str) -> Optional[Appointment]:
+    def schedule_appointment(
+        self, appt_id: str, patient_id: str, doctor_id: str, datetime_str: str
+    ) -> Optional[Appointment]:
         patient = self.patients.get(patient_id)
         doctor = self.doctors.get(doctor_id)
         if not patient or not doctor:
+            return None
+        if any(a.patient_id == patient_id and a.datetime_str == datetime_str for a in self.appointments):
             return None
         if not doctor.is_available(datetime_str):
             return None
@@ -69,6 +73,14 @@ class Store:
         old_datetime = appt.datetime_str
         if new_datetime == old_datetime:
             return True
+
+        if any(
+            a.patient_id == appt.patient_id
+            and a.datetime_str == new_datetime
+            and a.appt_id != appt_id
+            for a in self.appointments
+        ):
+            return False
 
         # If the new time is already booked (other than this same appointment), reject.
         if new_datetime in doc.schedule:
@@ -110,9 +122,18 @@ class Store:
     def save_to_files(self) -> None:
         data_dir = self.base / "data"
         data_dir.mkdir(exist_ok=True)
-        (data_dir / "patients.json").write_text(json.dumps([p.__dict__ for p in self.patients.values()], indent=2), encoding="utf-8")
-        (data_dir / "doctors.json").write_text(json.dumps([d.__dict__ for d in self.doctors.values()], indent=2), encoding="utf-8")
-        (data_dir / "appointments.json").write_text(json.dumps([a.to_dict() for a in self.appointments], indent=2), encoding="utf-8")
+        (data_dir / "patients.json").write_text(
+            json.dumps([p.__dict__ for p in self.patients.values()], indent=2),
+            encoding="utf-8",
+        )
+        (data_dir / "doctors.json").write_text(
+            json.dumps([d.__dict__ for d in self.doctors.values()], indent=2),
+            encoding="utf-8",
+        )
+        (data_dir / "appointments.json").write_text(
+            json.dumps([a.to_dict() for a in self.appointments], indent=2),
+            encoding="utf-8",
+        )
 
     def load_from_files(self) -> None:
         data_dir = self.base / "data"
