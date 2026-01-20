@@ -1,3 +1,4 @@
+import ctypes
 import tkinter as tk
 from tkinter import messagebox, ttk
 
@@ -395,7 +396,15 @@ class ClinicGUI:
 
 
 def run_gui():
+    try:
+        ctypes.windll.shcore.SetProcessDpiAwareness(1)
+    except Exception:
+        pass
     root = tk.Tk()
+    try:
+        root.tk.call("tk", "scaling", 2.25)
+    except Exception:
+        pass
     ClinicGUI(root)
     root.mainloop()
 
